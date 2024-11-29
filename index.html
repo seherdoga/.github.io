@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Alışveriş Listesi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-6">
+    <div class="max-w-lg mx-auto bg-white shadow-lg rounded-lg p-6">
+        <h1 class="text-2xl font-bold mb-4 text-center">Alışveriş Listesi</h1>
+        
+        <div class="space-y-2 mb-4">
+            <input 
+                type="text" 
+                id="itemNameInput" 
+                placeholder="Ürün adı" 
+                class="w-full p-2 border rounded"
+            >
+            <input 
+                type="number" 
+                id="itemPriceInput" 
+                placeholder="Fiyat" 
+                step="0.01"
+                class="w-full p-2 border rounded"
+            >
+            <input 
+                type="text" 
+                id="itemLinkInput" 
+                placeholder="Ürün linki" 
+                class="w-full p-2 border rounded"
+            >
+            <button 
+                onclick="addItem()" 
+                class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+            >
+                Ürün Ekle
+            </button>
+        </div>
+
+        <ul id="itemList" class="space-y-2">
+            <!-- Ürünler buraya eklenecek -->
+        </ul>
+
+        <div class="mt-4 flex space-x-2">
+            <button 
+                onclick="clearList()" 
+                class="flex-grow bg-red-500 text-white p-2 rounded hover:bg-red-600"
+            >
+                Listeyi Temizle
+            </button>
+            <div class="flex-grow text-center bg-green-100 p-2 rounded">
+                Toplam: <span id="totalPrice">0</span> TL
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sayfa yüklendiğinde localStorage'dan listeyi al
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedItems = JSON.parse(localStorage.getItem('shoppingList') || '[]');
+            savedItems.forEach(item => renderItem(item));
+            updateTotal();
+        });
+
+        function addItem() {
+            const nameInput = document.getElementById('itemNameInput');
+            const priceInput = document.getElementById('itemPriceInput');
+            const linkInput = document.getElementById('itemLinkInput');
+            
+            // Tüm inputların dolu olup olmadığını kontrol et
+            if (nameInput.value.trim() === '' || 
+                priceInput.value.trim() === '' || 
+                linkInput.value.trim() === '') {
+                alert('Lütfen tüm alanları doldurun');
+                return;
+            }
+
+            const newItem = {
+                id: Date.now(),
+                name: nameInput.value,
+                price: parseFloat(priceInput.value),
+                link: linkInput.value
+            };
+
+            renderItem(newItem);
+            saveToLocalStorage();
+            updateTotal();
+
+            // Inputları temizle
+            nameInput.value = '';
+            priceInput.value = '';
+            linkInput.value = '';
+        }
+
+        function renderItem(item) {
+            const list = document.getElementById('itemList');
+            const li = document.createElement('li');
+            li.className = 'flex justify-between items-center bg-gray-100 p-3 rounded';
+            li.dataset.id = item.id;
+
+            li.innerHTML = `
+                <div>
+                    <div class="font-bold">${item.name}</div>
+                    <div class="text-sm text-gray-600">${item.price} TL</div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <a href="${item.link}" target="_blank" class="text-blue-500 hover:text-blue-700">
+                        🔗 Git
+                    </a>
+                    <button onclick="removeItem(${item.id})" class="text-red-500">❌</button>
+                </div>
+            `;
+
+            list.appendChild(li);
+        }
+
+        function removeItem(id) {
+            const itemToRemove = document.querySelector(`[data-id="${id}"]`);
+            itemToRemove.remove();
+            saveToLocalStorage();
+            updateTotal();
+        }
+
+        function clearList() {
+            document.getElementById('itemList').innerHTML = '';
+            localStorage.removeItem('shoppingList');
+            updateTotal();
+        }
+
+        function saveToLocalStorage() {
+            const items = Array.from(document.querySelectorAll('#itemList li')).map(li => ({
+                id: parseInt(li.dataset.id),
+                name: li.querySelector('.font-bold').textContent,
+                price: parseFloat(li.querySelector('.text-gray-600').textContent),
+                link: li.querySelector('a').href
+            }));
+            localStorage.setItem('shoppingList', JSON.stringify(items));
+        }
+
+        function updateTotal() {
+            const items = document.querySelectorAll('#itemList li');
+            const total = Array.from(items).reduce((sum, item) => {
+                const price = parseFloat(item.querySelector('.text-gray-600').textContent);
+                return sum + price;
+            }, 0);
+            
+            document.getElementById('totalPrice').textContent = total.toFixed(2);
+        }
+
+        // Enter tuşuyla da ekleme yapılabilsin
+        document.getElementById('itemNameInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addItem();
+            }
+        });
+    </script>
+</body>
+</html>
